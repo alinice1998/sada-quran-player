@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مشغل صدى | مشغل التلاوات الخام والمؤثرات الصوتية الآنية</title>
+  <meta name="description" content="مشغل تفاعلي للتلاوات القرآنية الخام يتيح إضافة مؤثرات الصدى الحقيقي (Convolution Reverb) والتردد ومعادلة الصوت آنياً عبر Web Audio API مباشرة من تسجيلات مجتمع إتقان." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+
+  <!-- Hidden Audio Element for Web Audio API Graph -->
+  <audio id="mainAudio" crossorigin="anonymous" preload="auto" src="./samples/fatihah_raw.mp3"></audio>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+        </div>
+        <div>
+          <h1 class="brand-title">
+            صَـدَى
+            <span class="brand-tag">Web Audio DSP</span>
+          </h1>
+          <p class="brand-subtitle">مشغل التلاوات القرآنية الخام مع معالجة المؤثرات آنيًا</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a href="https://docs.cms.itqan.dev/ar/" target="_blank" rel="noopener noreferrer" class="track-origin-badge" style="text-decoration: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          مدعوم من مجتمع إتقان (Itqan CMS)
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-wrapper">
+
+    <!-- Left Sidebar: Recitations Catalog & Files -->
+    <aside class="sidebar">
+
+      <!-- Recitations Selection -->
+      <section class="glass-card">
+        <h2 class="card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          المصاحف والتسجيلات الخام
+        </h2>
+
+        <div class="reciter-select-group">
+          <label class="select-label" for="recitationSelect">اختر المصحف المعتمد:</label>
+          <select id="recitationSelect" class="custom-select">
+            <option value="11">مصحف القارئ بدر التركي (حفص عن عاصم)</option>
+            <option value="12">مصحف القارئ ماجد الزامل (حفص عن عاصم)</option>
+            <option value="13">مصحف القارئ حسن الدغريري (حفص عن عاصم)</option>
+          </select>
+        </div>
+
+        <div class="reciter-select-group">
+          <label class="select-label" for="surahSearchInput">البحث في السور:</label>
+          <input type="text" id="surahSearchInput" class="custom-select" placeholder="ابحث باسم السورة أو رقمها..." />
+        </div>
+
+        <div class="surah-list-container" id="surahListContainer">
+          <!-- Populated by JS -->
+          <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            جاري تهيئة قائمة السور...
+          </div>
+        </div>
+      </section>
+
+      <!-- Local File Upload -->
+      <section class="glass-card">
+        <h2 class="card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          تجربة ملف خام من جهازك
+        </h2>
+        <div class="upload-dropzone" id="dropzone">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+          <p class="upload-text">اسحب ملف التلاوة الخام وأفلته هنا</p>
+          <p class="upload-hint">أو انقر لاختيار ملف (MP3, WAV, M4A, OGG)</p>
+          <input type="file" id="localFileInput" accept="audio/*" style="display: none;" />
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- Center Studio: Player, Visualizer, Presets, Mixer -->
+    <section class="studio-center">
+
+      <!-- Player Screen -->
+      <div class="player-screen">
+        
+        <!-- Now Playing Header -->
+        <div class="now-playing-bar">
+          <div class="track-info">
+            <h2 class="track-surah-title" id="currentSurahTitle">سورة الفاتحة</h2>
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <span class="track-reciter-name" id="currentReciterName">الشيخ بدر التركي</span>
+              <span class="track-origin-badge" id="currentTrackBadge">تسجيل استوديو خام (Dry)</span>
+            </div>
+          </div>
+
+          <!-- Instant A/B Comparison Toggle -->
+          <button id="abToggleBtn" class="ab-comparison-btn" title="انقر للمقارنة السريعة بين الصوت الخام والصوت مع المؤثرات">
+            <span class="ab-status-indicator" id="abStatusIndicator"></span>
+            <span id="abToggleText">المؤثرات: مُفعّلة (Wet)</span>
+          </button>
+        </div>
+
+        <!-- Real-time Canvas Visualizer -->
+        <div class="visualizer-container">
+          <canvas id="visualizerCanvas"></canvas>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-section">
+          <div class="progress-bar-wrap" id="progressWrap">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="time-indicators">
+            <span id="currentTimeText">00:00</span>
+            <span id="durationText">00:00</span>
+          </div>
+        </div>
+
+        <!-- Playback Transport Controls -->
+        <div class="player-controls">
+          <button class="ctrl-btn" id="prevTrackBtn" title="السورة السابقة">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+          </button>
+
+          <button class="ctrl-btn play-btn" id="playPauseBtn" title="تشغيل / إيقاف مؤقت">
+            <svg id="playIcon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <svg id="pauseIcon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+          </button>
+
+          <button class="ctrl-btn" id="nextTrackBtn" title="السورة التالية">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+          </button>
+
+          <!-- Volume Slider -->
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-right: 1rem; width: 140px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-secondary);"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <input type="range" id="masterVolumeSlider" class="slider-input" min="0" max="1" step="0.01" value="1" title="مستوى الصوت العام" />
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Presets Cards -->
+      <div class="glass-card">
+        <h2 class="card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          البيئات الصوتية الجاهزة (Acoustic Presets)
+        </h2>
+
+        <div class="presets-grid">
+
+          <!-- Preset: Haram -->
+          <div class="preset-card active" data-preset="haram">
+            <div class="preset-header">
+              <span class="preset-icon">🕋</span>
+              <span class="preset-badge">مهيب وواسع</span>
+            </div>
+            <h3 class="preset-title">الحرم المكي الشريف</h3>
+            <p class="preset-desc">صدى رخامي واسع وممتد يحاكي رحاب وصحن الحرم والقباب المرتفعة.</p>
+          </div>
+
+          <!-- Preset: Dome Mosque -->
+          <div class="preset-card" data-preset="dome">
+            <div class="preset-header">
+              <span class="preset-icon">🕌</span>
+              <span class="preset-badge">متزن وندي</span>
+            </div>
+            <h3 class="preset-title">مسجد جامع ذو قبة</h3>
+            <p class="preset-desc">انعكاس متناسق دافئ يمنح الصوت هيبة وخشوعاً دون إخفاء الحروف.</p>
+          </div>
+
+          <!-- Preset: Musalla -->
+          <div class="preset-card" data-preset="musalla">
+            <div class="preset-header">
+              <span class="preset-icon">📿</span>
+              <span class="preset-badge">حميمي هادئ</span>
+            </div>
+            <h3 class="preset-title">مصلى هادئ / محراب</h3>
+            <p class="preset-desc">ارتداد خفيف ومباشر يبرز جمالية صوت القارئ وأحكام التجويد.</p>
+          </div>
+
+          <!-- Preset: Classic Echo -->
+          <div class="preset-card" data-preset="classic_echo">
+            <div class="preset-header">
+              <span class="preset-icon">📻</span>
+              <span class="preset-badge">تكرار إذاعي</span>
+            </div>
+            <h3 class="preset-title">صدى إذاعي كلاسيكي</h3>
+            <p class="preset-desc">تأخير زمني إيقاعي يذكر بتسجيلات محافل كبار القراء والإذاعة المصرية.</p>
+          </div>
+
+          <!-- Preset: Pure Studio -->
+          <div class="preset-card" data-preset="studio">
+            <div class="preset-header">
+              <span class="preset-icon">🎙️</span>
+              <span class="preset-badge">نقي 100%</span>
+            </div>
+            <h3 class="preset-title">استوديو نقي (خام)</h3>
+            <p class="preset-desc">تجاوز كافة المؤثرات للاستماع للتسجيل الأصلي تماماً كما سُجل.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Professional Mixer Console -->
+      <div class="glass-card">
+        <h2 class="card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+          طاولة المزج اليدوي (Mixer Console)
+        </h2>
+
+        <div class="mixer-sections">
+
+          <!-- Reverb Column -->
+          <div class="mixer-column">
+            <div class="mixer-col-title">
+              <span>الصدى المكاني (Convolution Reverb)</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h5l3 8 4-16 3 8h5"></path></svg>
+            </div>
+
+            <div class="fader-group">
+              <div class="fader-label-row">
+                <span class="fader-name">نسبة الصدى (Wet Mix):</span>
+                <span class="fader-val" id="reverbWetVal">18%</span>
+              </div>
+              <input type="range" id="reverbWetSlider" class="slider-input" min="0" max="0.5" step="0.01" value="0.18" />
+            </div>
+
+            <div class="fader-group">
+              <div class="fader-label-row">
+                <span class="fader-name">زمن التلاشي (Decay Time):</span>
+                <span class="fader-val" id="reverbDecayVal">3.2s</span>
+              </div>
+              <input type="range" id="reverbDecaySlider" class="slider-input" min="0.5" max="5.0" step="0.1" value="3.2" />
+            </div>
+          </div>
+
+          <!-- Delay Column -->
+          <div class="mixer-column">
+            <div class="mixer-col-title">
+              <span>التردد والتكرار (Delay & Echo)</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+
+            <div class="fader-group">
+              <div class="fader-label-row">
+                <span class="fader-name">زمن التردد (Delay Time):</span>
+                <span class="fader-val" id="delayTimeVal">240ms</span>
+              </div>
+              <input type="range" id="delayTimeSlider" class="slider-input" min="0.05" max="0.6" step="0.01" value="0.24" />
+            </div>
+
+            <div class="fader-group">
+              <div class="fader-label-row">
+                <span class="fader-name">عمق التكرار (Feedback):</span>
+                <span class="fader-val" id="delayFeedbackVal">0%</span>
+              </div>
+              <input type="range" id="delayFeedbackSlider" class="slider-input" min="0" max="0.4" step="0.01" value="0.0" />
+            </div>
+
+            <div class="fader-group">
+              <div class="fader-label-row">
+                <span class="fader-name">نسبة التردد (Delay Mix):</span>
+                <span class="fader-val" id="delayWetVal">0%</span>
+              </div>
+              <input type="range" id="delayWetSlider" class="slider-input" min="0" max="0.3" step="0.01" value="0.0" />
+            </div>
+          </div>
+
+          <!-- Equalizer Column -->
+          <div class="mixer-column">
+            <div class="mixer-col-title">
+              <span>معادل الصوت (3-Band EQ)</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+
+            <div class="fader-group">
+              <div class="fader-label-row">
+                <span class="fader-name">دفء الصوت (Bass):</span>
+                <span class="fader-val" id="bassVal">+0.5 dB</span>
+              </div>
+              <input type="range" id="bassSlider" class="slider-input" min="-6" max="6" step="0.5" value="0.5" />
+            </div>
+
+            <div class="fader-group">
+              <div class="fader-label-row">
+                <span class="fader-name">حضور الصوت (Mids):</span>
+                <span class="fader-val" id="midVal">0.0 dB</span>
+              </div>
+              <input type="range" id="midSlider" class="slider-input" min="-4" max="4" step="0.5" value="0.0" />
+            </div>
+
+            <div class="fader-group">
+              <div class="fader-label-row">
+                <span class="fader-name">نقاء ومخارج الحروف (Treble):</span>
+                <span class="fader-val" id="trebleVal">+0.5 dB</span>
+              </div>
+              <input type="range" id="trebleSlider" class="slider-input" min="-4" max="6" step="0.5" value="0.5" />
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Export Processed Audio Card -->
+      <div class="export-section">
+        <div class="export-info">
+          <h3 class="export-title">حفظ وتصدير التلاوة بالمؤثرات المختارة</h3>
+          <p class="export-desc">يقوم محرك DSP بمعالجة المقطع كاملاً وتوليد ملف صوتي فائق الجودة بصيغة WAV جاهز للتحميل.</p>
+        </div>
+        <button id="exportWavBtn" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          تصدير التلاوة (WAV)
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toastNotice" class="toast-notice">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gold-light);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <span id="toastNoticeMsg">رسالة الإشعار</span>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "sada-quran-player",
+  "version": "1.0.0",
+  "description": "مشغل صدى - مشغل تلاوات تفاعلي ذكي يتيح إضافة مؤثرات الصدى والتردد آنياً عبر Web Audio API",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "quran",
+    "audio",
+    "web-audio-api",
+    "reverb",
+    "delay",
+    "dsp",
+    "itqan"
+  ],
+  "author": "Itqan Community",
+  "license": "MIT"
+}
