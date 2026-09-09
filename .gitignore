@@ -1,3 +1,4 @@
+public/samples/
 node_modules/
 *.log
 .DS_Store

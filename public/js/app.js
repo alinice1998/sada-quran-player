@@ -210,40 +210,59 @@ function filterSurahs(query) {
 async function initApp() {
   setupEventListeners();
 
-  // 1. Immediately initialize with local samples so audio is 100% ready to play right away
+  // 1. Immediately initialize with local 23 short surahs (100% serverless, zero CORS issues)
   currentTracks = ItqanAPI.localSamples;
   renderSurahList(currentTracks);
   loadTrack(0, false);
 
-  // 2. Fetch recitations list in background
+  // 2. Fetch recitations catalog in background and populate select menu
   try {
     recitations = await ItqanAPI.getRecitations();
     if (recitations && recitations.length > 0) {
       recitationSelect.innerHTML = '';
+
+      const localOpt = document.createElement('option');
+      localOpt.value = 'local_badr';
+      localOpt.textContent = '✨ باقة الاستوديو المرفقة (قصار السور 23 سورة) - الشيخ بدر التركي';
+      localOpt.selected = true;
+      recitationSelect.appendChild(localOpt);
+
+      const group = document.createElement('optgroup');
+      group.label = 'المصاحف السحابية الكاملة (منصة إتقان)';
       recitations.forEach(r => {
         const opt = document.createElement('option');
         opt.value = r.id;
         const reciter = r.reciter?.name || r.name;
         const riwayah = r.riwayah?.name ? ` (${r.riwayah.name})` : '';
         opt.textContent = `${r.name || reciter}${riwayah}`;
-        recitationSelect.appendChild(opt);
+        group.appendChild(opt);
       });
-      loadRecitation(recitations[0].id);
+      recitationSelect.appendChild(group);
     }
   } catch (err) {
-    console.error('Failed to load recitations:', err);
+    console.error('Failed to load recitations list:', err);
   }
 }
 
 async function loadRecitation(recitationId) {
-  surahListContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted);">جاري تحميل سور المصحف...</div>';
+  if (recitationId === 'local_badr' || recitationId === 'local') {
+    currentTracks = ItqanAPI.localSamples;
+    renderSurahList(currentTracks);
+    loadTrack(0, true);
+    return;
+  }
+
+  surahListContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted);">جاري تحميل سور المصحف من منصة إتقان...</div>';
   const tracks = await ItqanAPI.getRecitationTracks(recitationId);
   if (tracks && tracks.length > 0) {
     currentTracks = tracks;
     renderSurahList(currentTracks);
-    if (audio.paused && (!audio.currentTime || audio.currentTime === 0)) {
-      loadTrack(0, false);
-    }
+    loadTrack(0, true);
+  } else {
+    showToast('تعذر جلب سور المصحف السحابي، تم العودة للباقة المحلية');
+    currentTracks = ItqanAPI.localSamples;
+    renderSurahList(currentTracks);
+    loadTrack(0, false);
   }
 }
 
@@ -282,6 +301,11 @@ function setupEventListeners() {
   audio.addEventListener('pause', () => {
     playIcon.style.display = 'block';
     pauseIcon.style.display = 'none';
+  });
+
+  audio.addEventListener('error', () => {
+    console.warn('Audio loading error for source:', audio.src);
+    showToast('تعذر تشغيل هذا المقطع عبر الشبكة، جرب باقة الاستوديو المرفقة أو ملفاً من جهازك');
   });
 
   prevTrackBtn.addEventListener('click', () => {
